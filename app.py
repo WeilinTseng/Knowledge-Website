@@ -131,6 +131,13 @@ def edit_article(article_id):
         return render_template('edit.html', article=article)
 
 
+def get_article_by_id(article_id):
+    cursor = get_cursor()
+    cursor.execute('SELECT id, title, content FROM articles WHERE id = ?', (article_id,))
+    article = cursor.fetchone()
+    return article
+
+
 @app.teardown_appcontext
 def close_connection(exception):
     connection = getattr(db_local, 'connection', None)
