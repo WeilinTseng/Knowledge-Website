@@ -36,7 +36,7 @@ def create_articles_table():
 @app.route('/')
 def index():
     cursor = get_cursor()
-    cursor.execute('SELECT * FROM articles')
+    cursor.execute('SELECT id, title FROM articles')
     articles = cursor.fetchall()
     return render_template('index.html', articles=articles)
 
@@ -58,7 +58,22 @@ def like(article_id):
     cursor = get_cursor()
     cursor.execute('UPDATE articles SET likes = likes + 1 WHERE id = ?', (article_id,))
     get_db().commit()
-    return redirect('/')
+
+    # Fetch the updated like count from the database
+    cursor.execute('SELECT likes FROM articles WHERE id = ?', (article_id,))
+    result = cursor.fetchone()
+    likes = result['likes']
+
+    # Return the updated like count as a string
+    return str(likes)
+
+
+@app.route('/article/<int:article_id>')
+def article(article_id):
+    cursor = get_cursor()
+    cursor.execute('SELECT title, content FROM articles WHERE id = ?', (article_id,))
+    article = cursor.fetchone()
+    return render_template('article.html', article=article)
 
 
 @app.teardown_appcontext
