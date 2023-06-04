@@ -63,7 +63,6 @@ def like(article_id):
 
 @app.teardown_appcontext
 def close_connection(exception):
-    # Close the database connection when the app context is torn down
     connection = getattr(db_local, 'connection', None)
     if connection is not None:
         connection.close()
