@@ -25,7 +25,7 @@ def get_cursor():
 @app.teardown_appcontext
 def close_connection(exception):
     # Close the database connection when the app context is torn down
-    connection = getattr(db_local, 'connection', None)
+    connection = getattr(db_local, 'cogit nnection', None)
     if connection is not None:
         connection.close()
 
