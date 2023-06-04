@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, redirect, url_for, request
 import sqlite3
 import threading
 
@@ -7,6 +7,23 @@ app = Flask(__name__)
 DATABASE = 'articles.db'
 # Create a thread-local storage for the database connection
 db_local = threading.local()
+
+
+# Sample data of articles
+articles = [
+    {'id': 1, 'title': 'Article 1', 'content': 'Content of Article 1'},
+    {'id': 2, 'title': 'Article 2', 'content': 'Content of Article 2'},
+    {'id': 3, 'title': 'Article 3', 'content': 'Content of Article 3'},
+]
+
+
+def get_article_by_id(article_id):
+    # Replace this with your logic to fetch the article from your data store
+    # Example code assuming you have a list of articles
+    for article in articles:
+        if article['id'] == article_id:
+            return article
+    return None  # Return None if the article is not found
 
 
 def get_db():
@@ -72,8 +89,25 @@ def like(article_id):
 def article(article_id):
     cursor = get_cursor()
     cursor.execute('SELECT title, content FROM articles WHERE id = ?', (article_id,))
-    article = cursor.fetchone()
+    result = cursor.fetchone()
+    article = {'title': result['title'], 'content': result['content']}
     return render_template('article.html', article=article)
+
+
+@app.route('/edit/<int:article_id>', methods=['GET', 'POST'])
+def edit_article(article_id):
+    if request.method == 'POST':
+        # Handle the form submission to update the article
+        title = request.form['title']
+        content = request.form['content']
+        cursor = get_cursor()
+        cursor.execute('UPDATE articles SET title = ?, content = ? WHERE id = ?', (title, content, article_id))
+        get_db().commit()
+        return redirect(url_for('index'))
+    else:
+        # Retrieve the article from your data store using the provided article_id
+        article = get_article_by_id(article_id)  # Replace with your logic to fetch the article
+        return render_template('edit.html', article=article)
 
 
 @app.teardown_appcontext
