@@ -11,7 +11,7 @@ db_local = threading.local()
 
 def get_db():
     # Check if the database connection is already stored in the thread-local storage
-    if not hasattr(db_local, 'connection'):
+    if not hasattr(db_local, 'connection') or db_local.connection is None:
         # If not, create a new connection and store it
         db_local.connection = sqlite3.connect(DATABASE)
         db_local.connection.row_factory = sqlite3.Row
@@ -66,6 +66,7 @@ def close_connection(exception):
     connection = getattr(db_local, 'connection', None)
     if connection is not None:
         connection.close()
+        db_local.connection = None  # Reset the connection attribute
 
 
 if __name__ == '__main__':
