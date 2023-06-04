@@ -51,24 +51,30 @@
 
         .create-article-button {
             display: block;
-            text-align: center;
+            text-align: right;
             margin-top: 20px;
+        }
+
+        .top-right {
+            position: absolute;
+            top: 20px;
+            right: 20px;
         }
     </style>
 </head>
 <body>
     <h1>Articles</h1>
+    <a href="/create" class="create-article-button top-right">Create Article</a>
     <ul class="article-list">
         {% for article in articles %}
         <li class="article-item">
             <h2><a href="{{ url_for('article', article_id=article['id']) }}">{{ article['title'] }}</a></h2>
             <div class="article-content">{{ article.content }}</div>
             <button class="like-button" onclick="likeArticle({{ article.id }})">Like</button>
-            <span class="like-count">{{ article.likes }}</span>
+            <span class="like-count" data-article-id="{{ article.id }}">{{ article.likes }}</span>
         </li>
         {% endfor %}
     </ul>
-    <a href="/create" class="create-article-button">Create Article</a>
 
     <script>
     function likeArticle(articleId) {
@@ -81,13 +87,36 @@
                 // Update the like count on the page
                 var likeCounts = document.querySelectorAll('.like-count[data-article-id="' + articleId + '"]');
                 likeCounts.forEach(function (likeCount) {
-                    likeCount.innerText = xhr.responseText;
+                    likeCount.textContent = xhr.responseText;
                 });
             }
         };
         xhr.send();
     }
-</script>
+
+    function updateLikeCounts() {
+        var likeCountElements = document.getElementsByClassName('like-count');
+        for (var i = 0; i < likeCountElements.length; i++) {
+            (function () {
+                var articleId = likeCountElements[i].getAttribute('data-article-id');
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", "/like/" + articleId, true);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        var likeCounts = document.querySelectorAll('.like-count[data-article-id="' + articleId + '"]');
+                        likeCounts.forEach(function (likeCount) {
+                            likeCount.textContent = xhr.responseText;
+                        });
+                    }
+                };
+                xhr.send();
+            })();
+        }
+    }
+
+    // Retrieve and update the initial like counts
+    updateLikeCounts();
+    </script>
 
 </body>
 </html>
