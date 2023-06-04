@@ -22,12 +22,15 @@ def get_cursor():
     return get_db().cursor()
 
 
-@app.teardown_appcontext
-def close_connection(exception):
-    # Close the database connection when the app context is torn down
-    connection = getattr(db_local, 'cogit nnection', None)
-    if connection is not None:
-        connection.close()
+def create_articles_table():
+    cursor = get_cursor()
+    cursor.execute('DROP TABLE IF EXISTS articles')
+    cursor.execute('''CREATE TABLE articles
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       title TEXT NOT NULL,
+                       content TEXT NOT NULL,
+                       likes INTEGER DEFAULT 0)''')
+    get_db().commit()
 
 
 @app.route('/')
@@ -49,5 +52,23 @@ def create():
         return redirect('/')
     return render_template('create.html')
 
+
+@app.route('/like/<int:article_id>', methods=['POST'])
+def like(article_id):
+    cursor = get_cursor()
+    cursor.execute('UPDATE articles SET likes = likes + 1 WHERE id = ?', (article_id,))
+    get_db().commit()
+    return redirect('/')
+
+
+@app.teardown_appcontext
+def close_connection(exception):
+    # Close the database connection when the app context is torn down
+    connection = getattr(db_local, 'connection', None)
+    if connection is not None:
+        connection.close()
+
+
 if __name__ == '__main__':
+    create_articles_table()
     app.run()
