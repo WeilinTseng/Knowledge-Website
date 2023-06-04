@@ -1,7 +1,10 @@
-<!DOCTYPE html>
+<!DOCTYPE html>\
+<form method="POST" action="/create_category">
+
+
 <html>
 <head>
-    <title>Create Article</title>
+    <title>Create Category</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -25,18 +28,7 @@
             font-weight: bold;
         }
 
-        input[type="text"],
-        textarea {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-        }
-
-        textarea {
-            height: 200px;
-        }
-
-        select {
+        input[type="text"] {
             width: 100%;
             padding: 10px;
             font-size: 16px;
@@ -66,24 +58,14 @@
     </style>
 </head>
 <body>
-    <h1>Create Article</h1>
+    <h1>Create Category</h1>
     <form method="POST">
-        <label for="title">Title:</label>
-        <input type="text" id="title" name="title" required>
-
-        <label for="content">Content:</label>
-        <textarea id="content" name="content" required></textarea>
-
-        <label for="category">Category:</label>
-        <select id="category" name="category" required>
-            {% for category in categories %}
-            <option value="{{ category.id }}">{{ category.name }}</option>
-            {% endfor %}
-        </select>
-
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
 
         <button type="submit">Create</button>
     </form>
     <a href="/">Back to Home</a>
 </body>
 </html>
+</form>

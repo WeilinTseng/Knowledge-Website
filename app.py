@@ -17,10 +17,17 @@ db_local = threading.local()
 def get_article_by_id(article_id):
     # Replace this with your logic to fetch the article from your data store
     # Example code assuming you have a list of articles
-    for article in articles:
-        if article['id'] == article_id:
-            return article
-    return None  # Return None if the article is not found
+    cursor = get_cursor()
+    cursor.execute('SELECT * FROM articles WHERE id = ?', (article_id,))
+    article = cursor.fetchone()
+    return article
+
+
+def get_category_by_id(category_id):
+    cursor = get_cursor()
+    cursor.execute('SELECT * FROM categories WHERE id = ?', (category_id,))
+    category = cursor.fetchone()
+    return category
 
 
 def get_db():
@@ -39,21 +46,40 @@ def get_cursor():
 def create_articles_table():
     cursor = get_cursor()
     cursor.execute('DROP TABLE IF EXISTS articles')
+    cursor.execute('DROP TABLE IF EXISTS categories')
+    cursor.execute('''CREATE TABLE categories
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       name TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE articles
                       (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       category_id INTEGER,
                        title TEXT NOT NULL,
                        content TEXT NOT NULL,
-                       likes INTEGER DEFAULT 0)''')
+                       likes INTEGER DEFAULT 0,
+                       FOREIGN KEY (category_id) REFERENCES categories (id))''')
+    get_db().commit()
+
+
+def create_categories_table():
+    cursor = get_cursor()
+    cursor.execute('DROP TABLE IF EXISTS categories')
+    cursor.execute('''CREATE TABLE categories
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       name TEXT NOT NULL)''')
     get_db().commit()
 
 
 @app.route('/')
 def index():
     cursor = get_cursor()
-    cursor.execute('SELECT id, title, likes FROM articles')
+    cursor.execute('SELECT articles.id, articles.title, articles.likes, categories.name AS category_name FROM articles JOIN categories ON articles.category_id = categories.id')
     articles = cursor.fetchall()
     liked_articles = session.get('liked_articles', [])
-    return render_template('index.html', articles=articles, liked_articles=liked_articles)
+
+    cursor.execute('SELECT id, name FROM categories')
+    categories = cursor.fetchall()
+
+    return render_template('index.html', articles=articles, liked_articles=liked_articles, categories=categories)
 
 
 @app.route('/create', methods=['GET', 'POST'])
@@ -61,11 +87,22 @@ def create():
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
+        category_id = request.form['category']
+
+        # Save the article with the selected category
         cursor = get_cursor()
-        cursor.execute('INSERT INTO articles (title, content) VALUES (?, ?)', (title, content))
+        cursor.execute('INSERT INTO articles (title, content, category_id) VALUES (?, ?, ?)',
+                       (title, content, category_id))
         get_db().commit()
+
         return redirect('/')
-    return render_template('create.html')
+
+    # Fetch the list of categories
+    cursor = get_cursor()
+    cursor.execute('SELECT id, name FROM categories')
+    categories = cursor.fetchall()
+
+    return render_template('create.html', categories=categories)
 
 
 @app.route('/like/<int:article_id>', methods=['POST'])
@@ -108,34 +145,51 @@ def check_like(article_id):
 
 @app.route('/article/<int:article_id>')
 def article(article_id):
-    cursor = get_cursor()
-    cursor.execute('SELECT title, content FROM articles WHERE id = ?', (article_id,))
-    result = cursor.fetchone()
-    article = {'title': result['title'], 'content': result['content']}
+    article = get_article_by_id(article_id)
     return render_template('article.html', article=article)
 
 
 @app.route('/edit/<int:article_id>', methods=['GET', 'POST'])
 def edit_article(article_id):
     if request.method == 'POST':
-        # Handle the form submission to update the article
         title = request.form['title']
         content = request.form['content']
+        category_id = request.form['category']
         cursor = get_cursor()
-        cursor.execute('UPDATE articles SET title = ?, content = ? WHERE id = ?', (title, content, article_id))
+        cursor.execute('UPDATE articles SET title = ?, content = ?, category_id = ? WHERE id = ?',
+                       (title, content, category_id, article_id))
         get_db().commit()
         return redirect(url_for('index'))
     else:
-        # Retrieve the article from your data store using the provided article_id
-        article = get_article_by_id(article_id)  # Replace with your logic to fetch the article
-        return render_template('edit.html', article=article)
+        article = get_article_by_id(article_id)
+        cursor = get_cursor()
+        cursor.execute('SELECT id, name FROM categories')
+        categories = cursor.fetchall()
+        return render_template('edit.html', article=article, categories=categories)
 
 
-def get_article_by_id(article_id):
-    cursor = get_cursor()
-    cursor.execute('SELECT id, title, content FROM articles WHERE id = ?', (article_id,))
-    article = cursor.fetchone()
-    return article
+@app.route('/create_category', methods=['GET', 'POST'])
+def create_category():
+    if request.method == 'POST':
+        name = request.form['name']
+        cursor = get_cursor()
+        cursor.execute('INSERT INTO categories (name) VALUES (?)', (name,))
+        get_db().commit()
+        return redirect('/')
+    return render_template('create_category.html')
+
+
+@app.route('/edit_category/<int:category_id>', methods=['GET', 'POST'])
+def edit_category(category_id):
+    if request.method == 'POST':
+        name = request.form['name']
+        cursor = get_cursor()
+        cursor.execute('UPDATE categories SET name = ? WHERE id = ?', (name, category_id))
+        get_db().commit()
+        return redirect(url_for('index'))
+    else:
+        category = get_category_by_id(category_id)
+        return render_template('edit_category.html', category=category)
 
 
 @app.teardown_appcontext
@@ -148,4 +202,5 @@ def close_connection(exception):
 
 if __name__ == '__main__':
     create_articles_table()
+    create_categories_table()
     app.run()

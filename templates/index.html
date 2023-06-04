@@ -53,7 +53,7 @@
             margin-left: 10px;
         }
 
-        .create-article-button {
+        .create-category-button {
             display: block;
             text-align: right;
             margin-top: 20px;
@@ -74,11 +74,13 @@
 <body>
     <h1>Articles</h1>
     <a href="/create" class="create-article-button">Create Article</a>
+    <a href="/create_category" class="create-category-button">Create Category</a>
     <ul class="article-list">
         {% for article in articles %}
         <li class="article-item">
             <h2><a href="{{ url_for('article', article_id=article['id']) }}">{{ article['title'] }}</a></h2>
-            <div class="article-content">{{ article.content }}</div>
+            <div class="article-content">{{ article['content'] }}</div>
+            <p>Category: {{ article['category_name'] }}</p> <!-- Add this line -->
             <button class="like-button {% if article['id'] in liked_articles %}liked{% endif %}" data-article-id="{{ article['id'] }}" onclick="likeArticle({{ article['id'] }})">
                 {% if article['id'] in liked_articles %}Unlike{% else %}Like{% endif %}
             </button>
