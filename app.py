@@ -1,20 +1,17 @@
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, request, session, jsonify
 import sqlite3
 import threading
+import os
 
+# Generate a secret key
+secret_key = os.urandom(24)
+# Set the secret key in your Flask app
 app = Flask(__name__)
+app.secret_key = secret_key
 
 DATABASE = 'articles.db'
 # Create a thread-local storage for the database connection
 db_local = threading.local()
-
-
-# Sample data of articles
-articles = [
-    {'id': 1, 'title': 'Article 1', 'content': 'Content of Article 1'},
-    {'id': 2, 'title': 'Article 2', 'content': 'Content of Article 2'},
-    {'id': 3, 'title': 'Article 3', 'content': 'Content of Article 3'},
-]
 
 
 def get_article_by_id(article_id):
@@ -53,9 +50,10 @@ def create_articles_table():
 @app.route('/')
 def index():
     cursor = get_cursor()
-    cursor.execute('SELECT id, title FROM articles')
+    cursor.execute('SELECT id, title, likes FROM articles')
     articles = cursor.fetchall()
-    return render_template('index.html', articles=articles)
+    liked_articles = session.get('liked_articles', [])
+    return render_template('index.html', articles=articles, liked_articles=liked_articles)
 
 
 @app.route('/create', methods=['GET', 'POST'])
@@ -72,17 +70,40 @@ def create():
 
 @app.route('/like/<int:article_id>', methods=['POST'])
 def like(article_id):
-    cursor = get_cursor()
-    cursor.execute('UPDATE articles SET likes = likes + 1 WHERE id = ?', (article_id,))
-    get_db().commit()
+    action = request.args.get('action', 'like')
+    liked_articles = session.get('liked_articles', [])
 
-    # Fetch the updated like count from the database
+    cursor = get_cursor()
     cursor.execute('SELECT likes FROM articles WHERE id = ?', (article_id,))
     result = cursor.fetchone()
     likes = result['likes']
+    is_liked = article_id in liked_articles
 
-    # Return the updated like count as a string
-    return str(likes)
+    if action == 'like':
+        if article_id not in liked_articles:
+            cursor.execute('UPDATE articles SET likes = likes + 1 WHERE id = ?', (article_id,))
+            liked_articles.append(article_id)
+            likes += 1
+            is_liked = True
+    elif action == 'unlike':
+        if article_id in liked_articles:
+            cursor.execute('UPDATE articles SET likes = likes - 1 WHERE id = ?', (article_id,))
+            liked_articles.remove(article_id)
+            likes -= 1
+            is_liked = False
+
+    session['liked_articles'] = liked_articles
+    get_db().commit()
+
+    response = {'likes': likes, 'isLiked': is_liked}
+    return jsonify(response)
+
+
+@app.route('/check_like/<int:article_id>', methods=['GET'])
+def check_like(article_id):
+    liked_articles = session.get('liked_articles', [])
+    is_liked = article_id in liked_articles
+    return str(is_liked)
 
 
 @app.route('/article/<int:article_id>')

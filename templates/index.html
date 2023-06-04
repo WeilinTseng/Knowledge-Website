@@ -44,6 +44,10 @@
             cursor: pointer;
         }
 
+        .like-button.liked {
+            background-color: #ff0000;
+        }
+
         .like-count {
             display: inline-block;
             margin-left: 10px;
@@ -53,17 +57,6 @@
             display: block;
             text-align: right;
             margin-top: 20px;
-        }
-
-        .edit-button {
-            display: inline-block;
-            padding: 5px 10px;
-            background-color: #ccc;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 3px;
-            cursor: pointer;
-            margin-left: 10px;
         }
 
         .top-right {
@@ -81,42 +74,33 @@
         <li class="article-item">
             <h2><a href="{{ url_for('article', article_id=article['id']) }}">{{ article['title'] }}</a></h2>
             <div class="article-content">{{ article.content }}</div>
-            <button class="like-button" onclick="likeArticle({{ article.id }})">Like</button>
-            <span class="like-count" data-article-id="{{ article.id }}">{{ article.likes }}</span>
-            <a href="{{ url_for('edit_article', article_id=article['id']) }}" class="edit-button">Edit</a>
+            <button class="like-button {% if article['id'] in liked_articles %}liked{% endif %}" data-article-id="{{ article['id'] }}" onclick="likeArticle({{ article['id'] }})">
+                {% if article['id'] in liked_articles %}Unlike{% else %}Like{% endif %}
+            </button>
+            <span class="like-count" data-article-id="{{ article['id'] }}">{{ article['likes'] }}</span>
         </li>
         {% endfor %}
     </ul>
 
     <script>
-    function likeArticle(articleId) {
-        // Make an AJAX request to the server to increment the like count for the article
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "/like/" + articleId, true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                // Update the like count on the page
-                var likeCounts = document.querySelectorAll('.like-count[data-article-id="' + articleId + '"]');
-                likeCounts.forEach(function (likeCount) {
-                    likeCount.textContent = xhr.responseText;
-                });
-            }
-        };
-        xhr.send();
-    }
-
-    function updateLikeCounts() {
-        var likeCountElements = document.getElementsByClassName('like-count');
-        for (var i = 0; i < likeCountElements.length; i++) {
+    function updateLikeStatus() {
+        var likeButtons = document.getElementsByClassName('like-button');
+        for (var i = 0; i < likeButtons.length; i++) {
             (function () {
-                var likeCountElement = likeCountElements[i];
-                var articleId = likeCountElement.getAttribute('data-article-id');
+                var likeButton = likeButtons[i];
+                var articleId = likeButton.getAttribute('data-article-id');
                 var xhr = new XMLHttpRequest();
-                xhr.open("GET", "/like/" + articleId, true);
+                xhr.open("GET", "/check_like/" + articleId, true);
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4 && xhr.status === 200) {
-                        likeCountElement.textContent = xhr.responseText;
+                        var isLiked = (xhr.responseText === 'true');
+                        if (isLiked) {
+                            likeButton.classList.add('liked');
+                            likeButton.textContent = 'Unlike';
+                        } else {
+                            likeButton.classList.remove('liked');
+                            likeButton.textContent = 'Like';
+                        }
                     }
                 };
                 xhr.send();
@@ -124,8 +108,34 @@
         }
     }
 
-    // Retrieve and update the initial like counts
-    updateLikeCounts();
+    function likeArticle(articleId) {
+        var likeButton = document.querySelector('.like-button[data-article-id="' + articleId + '"]');
+        var isLiked = likeButton.classList.contains('liked');
+        var action = isLiked ? 'unlike' : 'like';
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/like/" + articleId + "?action=" + action, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                var likes = response.likes;
+                var isLiked = response.isLiked;
+                var likeCountElements = document.querySelectorAll('.like-count[data-article-id="' + articleId + '"]');
+                likeCountElements.forEach(function (likeCountElement) {
+                    likeCountElement.textContent = likes;
+                });
+                if (isLiked) {
+                    likeButton.classList.add('liked');
+                    likeButton.textContent = 'Unlike';
+                } else {
+                    likeButton.classList.remove('liked');
+                    likeButton.textContent = 'Like';
+                }
+            }
+        };
+        xhr.send();
+    }
+
+    updateLikeStatus();
     </script>
 
 </body>
