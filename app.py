@@ -72,7 +72,8 @@ def create_categories_table():
 @app.route('/')
 def index():
     cursor = get_cursor()
-    cursor.execute('SELECT articles.id, articles.title, articles.likes, categories.name AS category_name FROM articles JOIN categories ON articles.category_id = categories.id')
+    cursor.execute(
+        'SELECT articles.id, articles.title, articles.likes, categories.name AS category_name FROM articles JOIN categories ON articles.category_id = categories.id')
     articles = cursor.fetchall()
     liked_articles = session.get('liked_articles', [])
 
@@ -190,6 +191,15 @@ def edit_category(category_id):
     else:
         category = get_category_by_id(category_id)
         return render_template('edit_category.html', category=category)
+
+
+@app.route('/delete/<int:article_id>', methods=['POST'])
+def delete_article(article_id):
+    cursor = get_cursor()
+    cursor.execute('DELETE FROM articles WHERE id = ?', (article_id,))
+    get_db().commit()
+
+    return redirect('/')
 
 
 @app.teardown_appcontext
