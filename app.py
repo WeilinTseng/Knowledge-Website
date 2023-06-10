@@ -82,6 +82,13 @@ def delete_category(category_id):
     get_db().commit()
 
 
+def has_associated_posts(category_id):
+    cursor = get_cursor()
+    cursor.execute('SELECT COUNT(*) FROM articles WHERE category_id = ?', (category_id,))
+    count = cursor.fetchone()[0]
+    return count > 0
+
+
 @app.route('/')
 def index():
     cursor = get_cursor()
@@ -202,23 +209,36 @@ def create_category():
     return render_template('create_category.html')
 
 
-@app.route('/edit_category/<int:category_id>', methods=['GET', 'POST'])
-def edit_category(category_id):
-    if request.method == 'POST':
-        name = request.form['name']
-        cursor = get_cursor()
-        cursor.execute('UPDATE categories SET name = ? WHERE id = ?', (name, category_id))
-        get_db().commit()
-        return redirect(url_for('index'))
-    else:
-        category = get_category_by_id(category_id)
-        return render_template('edit_category.html', category=category)
-
-
-@app.route('/delete_category', methods=['POST'])
+@app.route('/delete_category', methods=['GET', 'POST'])
 def delete_category():
     if request.method == 'POST':
         category_id = request.form['category']
+
+        # Check if the category has associated posts
+        if has_associated_posts(category_id):
+            error_message = "Cannot delete the category as it has associated posts."
+            categories = get_categories()
+            return render_template('delete_category.html', categories=categories, error_message=error_message)
+
+        # Delete the category from the database
+        delete_category_from_database(category_id)
+
+        return redirect('/')
+
+    categories = get_categories()
+    return render_template('delete_category.html', categories=categories)
+
+
+@app.route('/delete_category', methods=['POST'])
+def delete_category_route():
+    if request.method == 'POST':
+        category_id = request.form['category']
+
+        # Check if the category has associated posts
+        if has_associated_posts(category_id):
+            error_message = "Cannot delete the category as it has associated posts."
+            categories = get_categories()
+            return render_template('delete_category.html', categories=categories, error_message=error_message)
 
         # Delete the category from the database
         delete_category_from_database(category_id)
@@ -249,34 +269,10 @@ def delete_category_from_database(category_id):
 def delete_category_page():
     if request.method == 'POST':
         category_id = request.form['category']
-        delete_category(category_id)
+        delete_category_from_database(category_id)
         return redirect('/')
     categories = get_categories()
     return render_template('delete_category.html', categories=categories)
-
-
-@app.route('/delete_category', methods=['POST'])
-def delete_category_route():
-    if request.method == 'POST':
-        category_id = request.form['category']
-
-        # Delete the category from the database
-        delete_category(category_id)
-
-        return redirect('/')
-
-    categories = get_categories()
-    return render_template('delete_category.html', categories=categories)
-
-
-@app.route('/delete_category', methods=['POST'])
-def delete_category_submit():
-    category_id = request.form.get('category')
-
-    # Delete the category from the database
-    delete_category(category_id)
-
-    return redirect('/')
 
 
 @app.teardown_appcontext
