@@ -69,6 +69,19 @@ def create_categories_table():
     get_db().commit()
 
 
+def get_categories():
+    cursor = get_cursor()
+    cursor.execute('SELECT id, name FROM categories')
+    categories = cursor.fetchall()
+    return categories
+
+
+def delete_category(category_id):
+    cursor = get_cursor()
+    cursor.execute('DELETE FROM categories WHERE id = ?', (category_id,))
+    get_db().commit()
+
+
 @app.route('/')
 def index():
     cursor = get_cursor()
@@ -169,6 +182,15 @@ def edit_article(article_id):
         return render_template('edit.html', article=article, categories=categories)
 
 
+@app.route('/delete/<int:article_id>', methods=['POST'])
+def delete_article(article_id):
+    cursor = get_cursor()
+    cursor.execute('DELETE FROM articles WHERE id = ?', (article_id,))
+    get_db().commit()
+
+    return redirect('/')
+
+
 @app.route('/create_category', methods=['GET', 'POST'])
 def create_category():
     if request.method == 'POST':
@@ -193,11 +215,66 @@ def edit_category(category_id):
         return render_template('edit_category.html', category=category)
 
 
-@app.route('/delete/<int:article_id>', methods=['POST'])
-def delete_article(article_id):
-    cursor = get_cursor()
-    cursor.execute('DELETE FROM articles WHERE id = ?', (article_id,))
-    get_db().commit()
+@app.route('/delete_category', methods=['POST'])
+def delete_category():
+    if request.method == 'POST':
+        category_id = request.form['category']
+
+        # Delete the category from the database
+        delete_category_from_database(category_id)
+
+        return redirect('/')
+
+    categories = get_categories()
+    return render_template('delete_category.html', categories=categories)
+
+
+def delete_category_from_database(category_id):
+    # Import the necessary database library and establish a connection
+    import sqlite3
+
+    # Connect to the database
+    conn = sqlite3.connect('articles.db')
+    cursor = conn.cursor()
+
+    # Execute the delete query to remove the category
+    cursor.execute("DELETE FROM categories WHERE id=?", (category_id,))
+
+    # Commit the changes and close the connection
+    conn.commit()
+    conn.close()
+
+
+@app.route('/delete_category', methods=['GET', 'POST'])
+def delete_category_page():
+    if request.method == 'POST':
+        category_id = request.form['category']
+        delete_category(category_id)
+        return redirect('/')
+    categories = get_categories()
+    return render_template('delete_category.html', categories=categories)
+
+
+@app.route('/delete_category', methods=['POST'])
+def delete_category_route():
+    if request.method == 'POST':
+        category_id = request.form['category']
+
+        # Delete the category from the database
+        delete_category(category_id)
+
+        return redirect('/')
+
+    categories = get_categories()
+    return render_template('delete_category.html', categories=categories)
+
+
+@app.route('/delete_category', methods=['POST'])
+def delete_category_submit():
+    category_id = request.form.get('category')
+
+    # Delete the category from the database
+    delete_category(category_id)
 
     return redirect('/')
 

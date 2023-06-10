@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delete Category</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .form-container {
+            width: 50%;
+            margin: 0 auto;
+        }
+
+        .form-field {
+            margin-bottom: 10px;
+        }
+
+        .form-field label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .form-field select {
+            width: 100%;
+            padding: 5px;
+        }
+
+        .form-actions {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .form-actions button {
+            padding: 5px 10px;
+            background-color: #f44336;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Delete Category</h1>
+    <div class="form-container">
+       <form method="POST" action="{{ url_for('delete_category_page') }}">
+            <label for="category">Select a category to delete:</label>
+            <select id="category" name="category">
+                <option value="">-- Select a category --</option>
+                {% for category in categories %}
+                <option value="{{ category['id'] }}">{{ category['name'] }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Delete Category</button>
+        </form>
+    </div>
+</body>
+</html>
