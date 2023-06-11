@@ -33,6 +33,15 @@ restore_database_from_backup()
 
 
 def backup_database():
+    # Clone the repository from GitHub
+    repo_url = 'https://github.com/WeilinTseng/Knowledge-Website.git'
+    repo_dir = '/opt/render/project/src/new_repository'  # Replace with the desired directory path on Render
+
+    # Clone the repository to the specified directory
+    repo = Repo.clone_from(repo_url, repo_dir)
+
+    print(f'Repository: {repo}')  # Debug statement
+
     # Create a timestamp for the backup file
     timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
@@ -48,14 +57,6 @@ def backup_database():
     print(f'Backup file path: {backup_path}')  # Debug statement
 
     try:
-        # Clone the repository from GitHub
-        repo_url = 'https://github.com/WeilinTseng/Knowledge-Website.git'
-        repo_dir = '/opt/render/project/src/new_repository'  # Replace with the desired directory path on Render
-
-        # Clone the repository to the specified directory
-        repo = Repo.clone_from(repo_url, repo_dir)
-
-        print(f'Repository: {repo}')  # Debug statement
 
         # Add the backup file to the index
         repo.index.add([backup_path])
