@@ -111,7 +111,7 @@ def backup_on_exit():
 @app.route('/backup')
 def trigger_backup():
     backup_database()
-    return "Backup completed successfully!"
+    return "Backup Completed Successfully!"
 
 
 @app.teardown_appcontext
