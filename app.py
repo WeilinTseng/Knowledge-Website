@@ -21,7 +21,10 @@ backup_dir = 'backup/'
 
 # Git repository configuration
 repo_url = 'https://github.com/WeilinTseng/Knowledge-Website.git'
-repo_dir = '/opt/render/project/src/new_repository'  # Replace with the desired directory path on Render
+repo_dir = '/opt/render/project/src/new'  # Replace with the desired directory path on Render
+
+# GitHub authentication credentials
+github_token = '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'
 
 
 def restore_database_from_backup():
@@ -43,9 +46,16 @@ restore_database_from_backup()
 
 def backup_database():
     try:
-        # Clone the repository from GitHub
-        repo = Repo.clone_from(repo_url, repo_dir)
-        logger.info(f'Repository cloned: {repo}')
+        if os.path.exists(repo_dir):
+            # Repository already exists, perform git pull to update
+            repo = Repo(repo_dir)
+            origin = repo.remote(name='origin')
+            origin.pull()
+            logger.info('Repository updated')
+        else:
+            # Repository doesn't exist, clone it
+            repo = Repo.clone_from(repo_url, repo_dir)
+            logger.info(f'Repository cloned: {repo_dir}')
 
         # Create a timestamp for the backup file
         timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
@@ -71,7 +81,7 @@ def backup_database():
 
         # Push the changes to the remote repository
         origin = repo.remote(name='origin')
-        origin.push(refspec='master')
+        origin.push(refspec='master', force=True)
         logger.info('Changes pushed to remote repository')
 
         logger.info(f'Backup created: {backup_path}')
@@ -116,7 +126,7 @@ def backup_on_exit():
 def trigger_backup():
     backup_thread = threading.Thread(target=backup_database)
     backup_thread.start()
-    return jsonify({'message': 'Backup triggered successfully.'})
+    return jsonify({'message': 'Backup triggered.'}), 200
 
 
 def get_db():
