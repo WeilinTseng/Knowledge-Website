@@ -48,8 +48,12 @@ def backup_database():
     print(f'Backup file path: {backup_path}')  # Debug statement
 
     try:
-        # Initialize the repository
-        repo = Repo('/opt/render/project/src/.git')
+        # Clone the repository from GitHub
+        repo_url = 'https://github.com/WeilinTseng/Knowledge-Website.git'
+        repo_dir = '/opt/render/project/src/.git'  # Replace with the desired directory path on Render
+
+        # Clone the repository to the specified directory
+        repo = Repo.clone_from(repo_url, repo_dir)
 
         print(f'Repository: {repo}')  # Debug statement
 
