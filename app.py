@@ -46,17 +46,6 @@ restore_database_from_backup()
 
 def backup_database():
     try:
-        if os.path.exists(repo_dir):
-            # Repository already exists, perform git pull to update
-            repo = Repo(repo_dir)
-            origin = repo.remote(name='origin')
-            origin.pull()
-            logger.info('Repository updated')
-        else:
-            # Repository doesn't exist, clone it
-            repo = Repo.clone_from(repo_url, repo_dir)
-            logger.info(f'Repository cloned: {repo_dir}')
-
         # Create a timestamp for the backup file
         timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
@@ -67,23 +56,9 @@ def backup_database():
         backup_path = os.path.join(backup_dir, backup_file)
 
         # Copy the database file to the backup location
-        print(f"Database file path: {db_path}")
         shutil.copyfile(db_path, backup_path)
 
         logger.info(f'Backup file path: {backup_path}')
-
-        # Add the backup file to the index
-        repo.index.add([backup_path])
-        logger.info('Backup file added to index')
-
-        # Commit the backup file
-        repo.index.commit('Add backup file')
-        logger.info('Backup file committed')
-
-        # Push the changes to the remote repository
-        origin = repo.remote(name='origin')
-        origin.push(refspec='master', force=True)
-        logger.info('Changes pushed to remote repository')
 
         logger.info(f'Backup created: {backup_path}')
     except FileNotFoundError:
