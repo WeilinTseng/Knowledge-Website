@@ -65,7 +65,8 @@ def backup_database():
 
         # Push the changes to the remote repository
         origin = repo.remote('origin')
-        origin.push()
+        branch_name = 'master'  # Replace with the desired branch name
+        origin.push(f'HEAD:{branch_name}')
 
         print('Changes pushed to remote repository')  # Debug statement
 
