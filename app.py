@@ -50,7 +50,7 @@ def backup_database():
     try:
         # Clone the repository from GitHub
         repo_url = 'https://github.com/WeilinTseng/Knowledge-Website.git'
-        repo_dir = '/opt/render/project/src/.git'  # Replace with the desired directory path on Render
+        repo_dir = '/opt/render/project/src/new_repository'  # Replace with the desired directory path on Render
 
         # Clone the repository to the specified directory
         repo = Repo.clone_from(repo_url, repo_dir)
