@@ -67,6 +67,7 @@ def backup_database():
         backup_path = os.path.join(backup_dir, backup_file)
 
         # Copy the database file to the backup location
+        print(f"Database file path: {db_path}")
         shutil.copyfile(db_path, backup_path)
 
         logger.info(f'Backup file path: {backup_path}')
