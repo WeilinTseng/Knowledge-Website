@@ -24,7 +24,7 @@ repo_url = 'https://github.com/WeilinTseng/Knowledge-Website.git'
 repo_dir = '/opt/render/project/src/new'  # Replace with the desired directory path on Render
 
 # GitHub authentication credentials
-github_token = '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'
+github_token = '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'
 
 
 def restore_database_from_backup():
