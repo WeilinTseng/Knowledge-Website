@@ -64,8 +64,8 @@ def backup_database():
         print('Backup file committed')  # Debug statement
 
         # Push the changes to the remote repository
-        origin = repo.remote('origin')
-        origin.push()
+        origin = repo.remote(name='origin')
+        origin.push(refspec='master')
 
         print('Changes pushed to remote repository')
 
