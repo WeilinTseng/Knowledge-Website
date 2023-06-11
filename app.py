@@ -2,6 +2,50 @@ from flask import Flask, render_template, redirect, url_for, request, session, j
 import sqlite3
 import threading
 import os
+import shutil
+import datetime
+
+
+def backup_database():
+    # SQLite database file path
+    db_path = 'articles.db'
+
+    # Backup directory
+    backup_dir = 'backup/'
+
+    # Create a timestamp for the backup file
+    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+
+    # Create the backup file name
+    backup_file = f'backup_{timestamp}.db'
+
+    # Create the full backup file path
+    backup_path = os.path.join(backup_dir, backup_file)
+
+    # Copy the database file to the backup location
+    shutil.copyfile(db_path, backup_path)
+
+    print(f'Backup created: {backup_path}')
+
+
+def restore_database_from_backup():
+    # SQLite database file path
+    db_path = 'articles.db'
+
+    # Backup directory
+    backup_dir = 'backup/'
+
+    # Retrieve the most recent backup file
+    backup_files = os.listdir(backup_dir)
+    backup_files.sort(reverse=True)  # Sort files in descending order
+
+    if len(backup_files) > 0:
+        latest_backup_file = os.path.join(backup_dir, backup_files[0])
+        shutil.copyfile(latest_backup_file, db_path)
+        print(f'Database restored from backup: {latest_backup_file}')
+    else:
+        print('No backup files found.')
+
 
 # Generate a secret key
 secret_key = os.urandom(24)
@@ -13,21 +57,14 @@ DATABASE = 'articles.db'
 # Create a thread-local storage for the database connection
 db_local = threading.local()
 
-
-def get_article_by_id(article_id):
-    # Replace this with your logic to fetch the article from your data store
-    # Example code assuming you have a list of articles
-    cursor = get_cursor()
-    cursor.execute('SELECT * FROM articles WHERE id = ?', (article_id,))
-    article = cursor.fetchone()
-    return article
+# Restoring the database from backup when the application starts
+restore_database_from_backup()
 
 
-def get_category_by_id(category_id):
-    cursor = get_cursor()
-    cursor.execute('SELECT * FROM categories WHERE id = ?', (category_id,))
-    category = cursor.fetchone()
-    return category
+@app.route('/backup')
+def trigger_backup():
+    backup_database()
+    return "Backup completed successfully!"
 
 
 def get_db():
@@ -39,8 +76,17 @@ def get_db():
     return db_local.connection
 
 
-def get_cursor():
-    return get_db().cursor()
+def close_db(exception):
+    backup_database()
+    connection = getattr(db_local, 'connection', None)
+    if connection is not None:
+        connection.close()
+        db_local.connection = None  # Reset the connection attribute
+
+
+@app.teardown_appcontext
+def teardown_appcontext(exception):
+    close_db(exception)
 
 
 def create_articles_table():
@@ -67,6 +113,26 @@ def create_categories_table():
                       (id INTEGER PRIMARY KEY AUTOINCREMENT,
                        name TEXT NOT NULL)''')
     get_db().commit()
+
+
+def get_article_by_id(article_id):
+    # Replace this with your logic to fetch the article from your data store
+    # Example code assuming you have a list of articles
+    cursor = get_cursor()
+    cursor.execute('SELECT * FROM articles WHERE id = ?', (article_id,))
+    article = cursor.fetchone()
+    return article
+
+
+def get_category_by_id(category_id):
+    cursor = get_cursor()
+    cursor.execute('SELECT * FROM categories WHERE id = ?', (category_id,))
+    category = cursor.fetchone()
+    return category
+
+
+def get_cursor():
+    return get_db().cursor()
 
 
 def get_categories():
@@ -275,15 +341,8 @@ def delete_category_page():
     return render_template('delete_category.html', categories=categories)
 
 
-@app.teardown_appcontext
-def close_connection(exception):
-    connection = getattr(db_local, 'connection', None)
-    if connection is not None:
-        connection.close()
-        db_local.connection = None  # Reset the connection attribute
-
-
 if __name__ == '__main__':
     create_articles_table()
     create_categories_table()
+    restore_database_from_backup()
     app.run()
