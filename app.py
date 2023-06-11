@@ -48,6 +48,10 @@ def backup_database():
     # Initialize the repository
     repo = Repo('/opt/render/project/src/.git')
 
+    # Set the Git configuration
+    repo.config_writer().set_value('user', 'name', 'WeilinTseng').release()
+    repo.config_writer().set_value('user', 'email', 't1092B0021@ntut.org.tw').release()
+
     # Add the backup file to the index
     repo.index.add([backup_path])
 
