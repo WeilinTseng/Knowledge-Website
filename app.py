@@ -4,7 +4,6 @@ import threading
 import os
 import shutil
 import datetime
-import subprocess
 import atexit
 from git import Repo
 
@@ -103,8 +102,6 @@ def close_db(exception):
     if connection is not None:
         connection.close()
         db_local.connection = None  # Reset the connection attribute
-
-    # Perform any other necessary cleanup or backup operations here
 
 
 def backup_on_exit():
