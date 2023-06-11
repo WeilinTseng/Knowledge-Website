@@ -68,7 +68,7 @@ def backup_database():
 
 
 # Generate a secret key
-secret_key = os.urandom(24)
+secret_key = os.urandom(60)
 
 # Set the secret key in your Flask app
 app = Flask(__name__)
