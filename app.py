@@ -4,6 +4,7 @@ import threading
 import os
 import shutil
 import datetime
+import subprocess
 
 
 def backup_database():
@@ -24,6 +25,15 @@ def backup_database():
 
     # Copy the database file to the backup location
     shutil.copyfile(db_path, backup_path)
+
+    # Stage the backup file
+    subprocess.run(['git', 'add', backup_path])
+
+    # Commit the backup file
+    subprocess.run(['git', 'commit', '-m', 'Add backup file'])
+
+    # Push the backup branch to the remote repository
+    subprocess.run(['git', 'push', 'origin', 'backup'])
 
     print(f'Backup created: {backup_path}')
 
@@ -344,5 +354,5 @@ def delete_category_page():
 if __name__ == '__main__':
     create_articles_table()
     create_categories_table()
-    restore_database_from_backup()
+    backup_database()
     app.run()
