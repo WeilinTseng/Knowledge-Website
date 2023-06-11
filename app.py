@@ -7,6 +7,11 @@ import datetime
 import subprocess
 import atexit
 from git import Repo
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # SQLite database file path
 db_path = 'articles.db'
@@ -14,6 +19,9 @@ db_path = 'articles.db'
 # Backup directory
 backup_dir = 'backup/'
 
+# Git repository configuration
+repo_url = 'https://github.com/WeilinTseng/Knowledge-Website.git'
+repo_dir = '/opt/render/project/src/new_repository'  # Replace with the desired directory path on Render
 
 def restore_database_from_backup():
     # Retrieve the most recent backup file
@@ -23,60 +31,51 @@ def restore_database_from_backup():
     if len(backup_files) > 0:
         latest_backup_file = os.path.join(backup_dir, backup_files[0])
         shutil.copyfile(latest_backup_file, db_path)
-        print(f'Database restored from backup: {latest_backup_file}')
+        logger.info(f'Database restored from backup: {latest_backup_file}')
     else:
-        print('No backup files found.')
-
+        logger.warning('No backup files found.')
 
 # Call the restore_database_from_backup() function at startup
 restore_database_from_backup()
 
-
 def backup_database():
-    # Clone the repository from GitHub
-    repo_url = 'https://github.com/WeilinTseng/Knowledge-Website.git'
-    repo_dir = '/opt/render/project/src/new_repository'  # Replace with the desired directory path on Render
-
-    # Clone the repository to the specified directory
-    repo = Repo.clone_from(repo_url, repo_dir)
-
-    print(f'Repository: {repo}')  # Debug statement
-
-    # Create a timestamp for the backup file
-    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-
-    # Create the backup file name
-    backup_file = f'backup_{timestamp}.db'
-
-    # Create the full backup file path
-    backup_path = os.path.join(backup_dir, backup_file)
-
-    # Copy the database file to the backup location
-    shutil.copyfile(db_path, backup_path)
-
-    print(f'Backup file path: {backup_path}')  # Debug statement
-
     try:
+        # Clone the repository from GitHub
+        repo = Repo.clone_from(repo_url, repo_dir)
+        logger.info(f'Repository cloned: {repo}')
+
+        # Create a timestamp for the backup file
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+
+        # Create the backup file name
+        backup_file = f'backup_{timestamp}.db'
+
+        # Create the full backup file path
+        backup_path = os.path.join(backup_dir, backup_file)
+
+        # Copy the database file to the backup location
+        shutil.copyfile(db_path, backup_path)
+
+        logger.info(f'Backup file path: {backup_path}')
 
         # Add the backup file to the index
         repo.index.add([backup_path])
-
-        print('Backup file added to index')  # Debug statement
+        logger.info('Backup file added to index')
 
         # Commit the backup file
         repo.index.commit('Add backup file')
-
-        print('Backup file committed')  # Debug statement
+        logger.info('Backup file committed')
 
         # Push the changes to the remote repository
         origin = repo.remote(name='origin')
         origin.push(refspec='master')
+        logger.info('Changes pushed to remote repository')
 
-        print('Changes pushed to remote repository')
-
-        print(f'Backup created: {backup_path}')
+        logger.info(f'Backup created: {backup_path}')
+    except FileNotFoundError:
+        logger.error(f'File not found error occurred while creating backup.')
     except Exception as e:
-        print(f'Error occurred: {str(e)}')  # Debug statement
+        logger.error(f'Error occurred: {str(e)}')
 
 
 # Generate a secret key
@@ -115,10 +114,11 @@ def backup_on_exit():
     backup_database()
 
 
-@app.route('/backup')
+@app.route('/backup', methods=['POST'])
 def trigger_backup():
-    backup_database()
-    return "Backup completed successfully!"
+    backup_thread = threading.Thread(target=backup_database)
+    backup_thread.start()
+    return jsonify({'message': 'Backup triggered successfully.'})
 
 
 @app.teardown_appcontext
