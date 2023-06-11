@@ -23,6 +23,7 @@ backup_dir = 'backup/'
 repo_url = 'https://github.com/WeilinTseng/Knowledge-Website.git'
 repo_dir = '/opt/render/project/src/new_repository'  # Replace with the desired directory path on Render
 
+
 def restore_database_from_backup():
     # Retrieve the most recent backup file
     backup_files = os.listdir(backup_dir)
@@ -35,8 +36,10 @@ def restore_database_from_backup():
     else:
         logger.warning('No backup files found.')
 
+
 # Call the restore_database_from_backup() function at startup
 restore_database_from_backup()
+
 
 def backup_database():
     try:
@@ -73,7 +76,7 @@ def backup_database():
 
         logger.info(f'Backup created: {backup_path}')
     except FileNotFoundError:
-        logger.error(f'File not found error occurred while creating backup.')
+        logger.error('File not found error occurred while creating backup.')
     except Exception as e:
         logger.error(f'Error occurred: {str(e)}')
 
@@ -90,6 +93,30 @@ DATABASE = 'articles.db'
 
 # Create a thread-local storage for the database connection
 db_local = threading.local()
+
+
+@app.before_request
+def backup_on_request():
+    backup_thread = threading.Thread(target=backup_database)
+    backup_thread.start()
+
+
+@app.teardown_request
+def backup_on_teardown(exception=None):
+    backup_thread = threading.Thread(target=backup_database)
+    backup_thread.start()
+
+
+@atexit.register
+def backup_on_exit():
+    backup_database()
+
+
+@app.route('/backup', methods=['POST'])
+def trigger_backup():
+    backup_thread = threading.Thread(target=backup_database)
+    backup_thread.start()
+    return jsonify({'message': 'Backup triggered successfully.'})
 
 
 def get_db():
@@ -112,13 +139,6 @@ def close_db(exception):
 
 def backup_on_exit():
     backup_database()
-
-
-@app.route('/backup', methods=['POST'])
-def trigger_backup():
-    backup_thread = threading.Thread(target=backup_database)
-    backup_thread.start()
-    return jsonify({'message': 'Backup triggered successfully.'})
 
 
 @app.teardown_appcontext
