@@ -46,7 +46,7 @@ def backup_database():
     shutil.copyfile(db_path, backup_path)
 
     # Initialize the repository
-    repo = Repo('"/opt/render/project/src/.git')
+    repo = Repo('/opt/render/project/src/.git')
 
     # Add the backup file to the index
     repo.index.add([backup_path])
