@@ -67,7 +67,7 @@ def backup_database():
         origin = repo.remote('origin')
         origin.push()
 
-        print('Changes pushed to remote repository')  # Debug statement
+        print('Changes pushed to remote repository')
 
         print(f'Backup created: {backup_path}')
     except Exception as e:
