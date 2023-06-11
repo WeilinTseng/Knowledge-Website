@@ -65,12 +65,6 @@ def backup_database():
     print(f'Backup created: {backup_path}')
 
 
-@app.route('/backup')
-def trigger_backup():
-    backup_database()
-    return "Backup completed successfully!"
-
-
 # Generate a secret key
 secret_key = os.urandom(24)
 
@@ -105,6 +99,12 @@ def close_db(exception):
 
 def backup_on_exit():
     backup_database()
+
+
+@app.route('/backup')
+def trigger_backup():
+    backup_database()
+    return "Backup completed successfully!"
 
 
 @app.teardown_appcontext
