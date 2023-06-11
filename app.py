@@ -5,15 +5,33 @@ import os
 import shutil
 import datetime
 import subprocess
+import atexit
+
+# SQLite database file path
+db_path = 'articles.db'
+
+# Backup directory
+backup_dir = 'backup/'
+
+
+def restore_database_from_backup():
+    # Retrieve the most recent backup file
+    backup_files = os.listdir(backup_dir)
+    backup_files.sort(reverse=True)  # Sort files in descending order
+
+    if len(backup_files) > 0:
+        latest_backup_file = os.path.join(backup_dir, backup_files[0])
+        shutil.copyfile(latest_backup_file, db_path)
+        print(f'Database restored from backup: {latest_backup_file}')
+    else:
+        print('No backup files found.')
+
+
+# Call the restore_database_from_backup() function at startup
+restore_database_from_backup()
 
 
 def backup_database():
-    # SQLite database file path
-    db_path = 'articles.db'
-
-    # Backup directory
-    backup_dir = 'backup/'
-
     # Create a timestamp for the backup file
     timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
@@ -33,48 +51,23 @@ def backup_database():
     subprocess.run(['git', 'commit', '-m', 'Add backup file'])
 
     # Push the backup branch to the remote repository
-    subprocess.run(['git', 'push', 'origin', 'backup'])
+    subprocess.run(['git', 'push', 'origin', 'master'])
 
     print(f'Backup created: {backup_path}')
 
 
-def restore_database_from_backup():
-    # SQLite database file path
-    db_path = 'articles.db'
-
-    # Backup directory
-    backup_dir = 'backup/'
-
-    # Retrieve the most recent backup file
-    backup_files = os.listdir(backup_dir)
-    backup_files.sort(reverse=True)  # Sort files in descending order
-
-    if len(backup_files) > 0:
-        latest_backup_file = os.path.join(backup_dir, backup_files[0])
-        shutil.copyfile(latest_backup_file, db_path)
-        print(f'Database restored from backup: {latest_backup_file}')
-    else:
-        print('No backup files found.')
-
-
 # Generate a secret key
 secret_key = os.urandom(24)
+
 # Set the secret key in your Flask app
 app = Flask(__name__)
 app.secret_key = secret_key
 
 DATABASE = 'articles.db'
+
+
 # Create a thread-local storage for the database connection
 db_local = threading.local()
-
-# Restoring the database from backup when the application starts
-restore_database_from_backup()
-
-
-@app.route('/backup')
-def trigger_backup():
-    backup_database()
-    return "Backup completed successfully!"
 
 
 def get_db():
@@ -87,11 +80,16 @@ def get_db():
 
 
 def close_db(exception):
-    backup_database()
     connection = getattr(db_local, 'connection', None)
     if connection is not None:
         connection.close()
         db_local.connection = None  # Reset the connection attribute
+
+    # Perform any other necessary cleanup or backup operations here
+
+
+def backup_on_exit():
+    backup_database()
 
 
 @app.teardown_appcontext
@@ -352,7 +350,8 @@ def delete_category_page():
 
 
 if __name__ == '__main__':
-    create_articles_table()
-    create_categories_table()
-    backup_database()
-    app.run()
+    # Register the backup function to run on exit
+    atexit.register(backup_on_exit)
+
+    # Start the Flask development server
+    app.run(debug=True)
