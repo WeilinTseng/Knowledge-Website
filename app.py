@@ -45,24 +45,33 @@ def backup_database():
     # Copy the database file to the backup location
     shutil.copyfile(db_path, backup_path)
 
-    # Initialize the repository
-    repo = Repo('/opt/render/project/src/.git')
+    print(f'Backup file path: {backup_path}')  # Debug statement
 
-    # Set the Git configuration
-    repo.config_writer().set_value('user', 'name', 'WeilinTseng').release()
-    repo.config_writer().set_value('user', 'email', 't1092B0021@ntut.org.tw').release()
+    try:
+        # Initialize the repository
+        repo = Repo('/opt/render/project/src/.git')
 
-    # Add the backup file to the index
-    repo.index.add([backup_path])
+        print(f'Repository: {repo}')  # Debug statement
 
-    # Commit the backup file
-    repo.index.commit('Add backup file')
+        # Add the backup file to the index
+        repo.index.add([backup_path])
 
-    # Push the changes to the remote repository
-    origin = repo.remote('origin')
-    origin.push()
+        print('Backup file added to index')  # Debug statement
 
-    print(f'Backup created: {backup_path}')
+        # Commit the backup file
+        repo.index.commit('Add backup file')
+
+        print('Backup file committed')  # Debug statement
+
+        # Push the changes to the remote repository
+        origin = repo.remote('origin')
+        origin.push()
+
+        print('Changes pushed to remote repository')  # Debug statement
+
+        print(f'Backup created: {backup_path}')
+    except Exception as e:
+        print(f'Error occurred: {str(e)}')  # Debug statement
 
 
 # Generate a secret key
