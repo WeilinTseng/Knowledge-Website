@@ -4,6 +4,7 @@ import threading
 import os
 import shutil
 import datetime
+import subprocess
 import atexit
 from git import Repo
 
@@ -64,8 +65,7 @@ def backup_database():
 
         # Push the changes to the remote repository
         origin = repo.remote('origin')
-        branch_name = 'master'  # Replace with the desired branch name
-        origin.push(f'HEAD:{branch_name}')
+        origin.push()
 
         print('Changes pushed to remote repository')  # Debug statement
 
@@ -103,6 +103,8 @@ def close_db(exception):
         connection.close()
         db_local.connection = None  # Reset the connection attribute
 
+    # Perform any other necessary cleanup or backup operations here
+
 
 def backup_on_exit():
     backup_database()
@@ -111,7 +113,7 @@ def backup_on_exit():
 @app.route('/backup')
 def trigger_backup():
     backup_database()
-    return "Backup Completed Successfully!"
+    return "Backup completed successfully!"
 
 
 @app.teardown_appcontext
