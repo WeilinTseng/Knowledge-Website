@@ -6,6 +6,7 @@ import shutil
 import datetime
 import subprocess
 import atexit
+from git import Repo
 
 # SQLite database file path
 db_path = 'articles.db'
@@ -44,14 +45,18 @@ def backup_database():
     # Copy the database file to the backup location
     shutil.copyfile(db_path, backup_path)
 
-    # Stage the backup file
-    subprocess.run(['git', 'add', backup_path])
+    # Initialize the repository
+    repo = Repo('"/opt/render/project/src/.git')
+
+    # Add the backup file to the index
+    repo.index.add([backup_path])
 
     # Commit the backup file
-    subprocess.run(['git', 'commit', '-m', 'Add backup file'])
+    repo.index.commit('Add backup file')
 
-    # Push the backup branch to the remote repository
-    subprocess.run(['git', 'push', 'origin', 'master'])
+    # Push the changes to the remote repository
+    origin = repo.remote('origin')
+    origin.push()
 
     print(f'Backup created: {backup_path}')
 
